@@ -4,16 +4,21 @@ if(!$conn){
     echo "Error in Connection" . mysqli_connect_error();
 }else{
 
-    $sql = "UPDATE email_verification set is_verified=1 where verification_code = '{$_GET['v_code']}'";
-    
+    $sql = "UPDATE user_profile set is_verified=1 where verification_code = '{$_GET['v_code']}'";
 
     if(mysqli_query($conn,$sql)){
-        echo "<h3>" . "Email is Verified." . "</h3>";
+        echo "<h4>" . "Email is Verified." . "</h4>";
     
 
     }else{
-        echo "<h3>" . "Email is not Verified." . "</h3>";
+        echo "<h4>" . "Email is not Verified." . "</h4>";
         echo "Error" . $sql . mysqli_error($conn);
+    }
+}
+
+if($_SERVER['REQUEST_METHOD'] == 'POST'){
+    if(isset($_POST['login'])){
+        header("location:login.php");
     }
 }
 
@@ -38,8 +43,9 @@ if(!$conn){
     <!-- place navbar here -->
   </header>
   <main>
-<input type="submit" value="<?php 
-header("location:login.php")?>" class="btn btn-primary" name="login">
+    <form action="<?php echo $_SERVER['PHP_SELF'];?>" method="post">
+<input type="submit" value="Login" class="btn btn-primary ms-2" name="login">
+    </form>
   </main>
   <footer>
     <!-- place footer here -->

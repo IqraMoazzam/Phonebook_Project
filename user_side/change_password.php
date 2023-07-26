@@ -3,7 +3,64 @@ session_start();
 if (isset($_SESSION['user_id'])) {
     header("location:home.php");
 }
+function sendEmail($to,$v_code)
+{
+    // Set your ElasticEmail API key
+    $apiKey = '3F02346C2621CF5F57519E71141102EE73647057B738186CE76CBDE080325CFBA7BF8CDCC116D54A38E7875D8C6A2364';
 
+    // API endpoint for sending emails
+    $url = 'https://api.elasticemail.com/v2/email/send';
+
+    // Email parameters
+    $from = 'iqramoazzam22@gmail.com';
+
+    $subject = "Password Reset";
+    $message = "You have requested to reset your password. Click the link below to reset it:<br>
+    http://localhost/phonebook-project/user_side/reset_password.php?v_code=$v_code<br>
+    If you didn't request this, please ignore this email.";
+    $headers = "From: iqramoazzam22@gmail.com";
+
+    // Prepare the request data
+    $data = array(
+        'apikey' => $apiKey,
+        'from' => $from,
+        'to' => $to,
+        'verification_code' => $v_code,
+        'subject' => $subject,
+        'body' => $message,
+        'header' => $headers,
+        'isTransactional' => true, // Set to true for transactional emails
+    );
+
+    // Initialize cURL session
+    $ch = curl_init($url);
+
+    // Set cURL options
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    // Execute the cURL request
+    $response = curl_exec($ch);
+
+    // Check for cURL errors
+    if (curl_errno($ch)) {
+        echo 'cURL Error: ' . curl_error($ch);
+    }
+
+    // Close cURL session
+    curl_close($ch);
+
+    // Process the response
+    $responseData = json_decode($response, true);
+
+    // Check the response status
+    if ($responseData['success']) {
+        echo "<h5>"  . 'Email sent successfully!' . "</h5>";
+    } else {
+        echo 'Failed to send the email. Error: ' . $responseData['error'];
+    }
+}
 //function used to check the space,slashes and prevent to sqa injection
 function test_input($data)
 {
@@ -14,96 +71,66 @@ function test_input($data)
 }
 
 //define variables and set to empty values
-$email = $password = "";
-$emailError = $passwordError = "";
-$retain_email = $retain_password = "";
+$email = "";
+$emailError = "";
+$retain_email = "";
 
 //check if request_method is equal to post then it starts working
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['btn_pass'])) {
+    } else if ((isset($_POST['btn_send']))) {
+        //define flag that is used to check condition based on true and false
+        $is_form_valid = true;
 
-    //define flag that is used to check condition based on true and false
-    $is_form_valid = true;
-
-    //if email field is empty then it thrown an error and also flag don't send the file to other page
-    if (empty($_POST["email"])) {
-        $emailError = "Email is Required";
-        $is_form_valid = false;
-    } else {
-
-        //if email field can't be empty then second condition is checked the function of test_input
-        $email = test_input($_POST["email"]);
-
-        //if both condition is true then third condition is check the form validation through php
-        if (!preg_match("/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$/", $email)) {
-            $emailError = "Invalid Email Error";
+        //if email field is empty then it thrown an error and also flag don't send the file to other page
+        if (empty($_POST["email"])) {
+            $emailError = "Email is Required";
             $is_form_valid = false;
-        }
-    }
-
-    // if both error can be true then it retains the value that user enter before it    
-    if (empty($emailError) || ($emailError == "Invalid Email Error")) {
-        $retain_email = $email;
-    }
-
-    //if password field is empty then it thrown an error and also flag don't send the file to other page    
-    if (empty($_POST["pwd"])) {
-        $passwordError = "Password is Required";
-        $is_form_valid = false;
-    } else {
-
-        //if password field can't be empty then second condition is checked the function of test_input
-        $password = test_input($_POST["pwd"]);
-
-        //if both condition is true then third condition is check the form validation through php
-        // strlen($password) < 8 ||
-        if (!preg_match("/^(?=.*[A-Z])(?=.*\d).{8,}$/", $password)) {
-            $passwordError = "Password must be at least 8 characters long, contain at least one capital letter, and one numeric character";
-            $is_form_valid = false;
-        }
-    }
-
-    // if both error can be true then it retains the value that user enter before it    
-    if (empty($passwordError) || ($passwordError == "Password must be at least 8 characters long, contain at least one capital letter, and one numeric character")) {
-        $retain_password = $password;
-    }
-
-
-    //Database Connection
-    if ($is_form_valid) {
-        $conn = mysqli_connect("localhost", "root", "", "phonebook-project");
-        if (!$conn) {
-            echo "Error in Connection" . mysqli_connect_error();
         } else {
-            $password = sha1($password);
-            try {
-                $sql = "SELECT user_id,is_verified from user_profile where user_email = '$email' and user_password = '$password'";
+
+            //if email field can't be empty then second condition is checked the function of test_input
+            $email = test_input($_POST["email"]);
+
+            //if both condition is true then third condition is check the form validation through php
+            if (!preg_match("/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$/", $email)) {
+                $emailError = "Invalid Email Error";
+                $is_form_valid = false;
+            }
+        }
+
+        // if both error can be true then it retains the value that user enter before it    
+        if (empty($emailError) || ($emailError == "Invalid Email Error")) {
+            $retain_email = $email;
+        }
+        //Database Connection
+        if ($is_form_valid) {
+            $conn = mysqli_connect("localhost", "root", "", "phonebook-project");
+            if (!$conn) {
+                echo "Error in Connection" . mysqli_connect_error();
+            } else {
+                $email = $_POST['email'];
+
+                $sql = "SELECT verification_code from user_profile where user_email = '{$email}'";
 
                 $result = mysqli_query($conn, $sql);
                 $data = mysqli_num_rows($result);
                 if ($data > 0) {
                     $row = mysqli_fetch_assoc($result);
-                    if ($row['is_verified'] == 1) {
-                        $_SESSION['user_id'] = $row["user_id"];
-                        header("location:home.php");
-                        
-                    } else {
-                        $message = "Email not Verified.";
+                    $v_code = $row['verification_code'];
+                    if (mysqli_query($conn, $sql)) {
+
+                        if (sendEmail($_POST['email'], $v_code)) {
+                            echo "<h5>Password reset link sent to your email.</h5>";
+                        }
                     }
                 } else {
-                   $message = "Email or Password might be incorrect." . mysqli_error($conn);
+                    echo "<h5>Verification Code not found in the database.</h5>";
                 }
-            } catch (mysqli_sql_exception $e) {
-                echo $message;
             }
-       
-           
         }
     }
 }
 ?>
-
-
-
 
 <!doctype html>
 <html lang="en">
@@ -179,8 +206,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="row">
                 <div class=" col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 custom_col custom_height custom_form">
                     <form class="pt-3 px-3 pb-2" action="<?php echo $_SERVER['PHP_SELF'] ?>" method="post">
-                        <div class="h2 text-center fw-bold">PhoneBook Login</div>
-                        <div class="ps-4 pt-2">
+                        <div class="h2 text-center fw-bold pt-4">Change Password</div>
+                        <div class="ps-4 pt-4">
                             <label for="email" class="form-label fw-bold">Email:<span class="error">*</span></label>
                             <input type="email" name="email" id="email" class="form-control custom_form_field_width ps-3" placeholder="Enter Email" value="<?php if (!empty($retain_email)) {
                                                                                                                                                                 echo $retain_email;
@@ -190,20 +217,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <span class="error"><?php echo $emailError ?></span>
 
                         </div>
-                        <div class="ps-4 pt-2">
-                            <label for="pwd" class="form-label fw-bold">Password:<span class="error">*</span></label>
-                            <input type="password" name="pwd" id="pwd" class="form-control custom_form_field_width ps-3" placeholder="Enter Password" value="<?php if (!empty($retain_password)) {
-                                                                                                                                                                    echo $retain_password;
-                                                                                                                                                                } else {
-                                                                                                                                                                    echo "";
-                                                                                                                                                                } ?>">
-                            <span class="error"><?php echo $passwordError ?></span>
-                        </div>
 
-
-                        <div class="text-center mb-3 pt-3">
-                            <button type="submit" class="btn btn-light w-25 fw-bold ms-2" name="btn" id="btn">Login</button>
-                            <a href="change_password.php" class="btn btn-light fw-bold ms-2" name="btn_pass">Forget Password</a>
+                        <div class="text-center mb-3 pt-4">
+                            <button type="submit" class="btn btn-light w-50 fw-bold ms-2" name="btn_send" id="btn">Send Email</button>
 
                         </div>
 

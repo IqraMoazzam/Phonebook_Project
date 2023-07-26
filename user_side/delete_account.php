@@ -1,25 +1,39 @@
 <?php
 session_start();
-if(!isset($_SESSION['user_id'])){
+if (!isset($_SESSION['user_id'])) {
     header("location:login.php");
 }
-if($_SERVER["REQUEST_METHOD"] == "POST"){
-    if(isset($_POST['del_btn'])){
-$conn = mysqli_connect("localhost","root","","phonebook-project");
-if(!$conn){
-    echo "Error in Connection" . mysqli_connect_error();
-}else{
-    $user_id = $_SESSION['user_id'];
-    $sql="delete from user_profile where user_id = '$user_id'";
-    if(mysqli_query($conn,$sql)){
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['del_btn'])) {
+        $conn = mysqli_connect("localhost", "root", "", "phonebook-project");
+    if (!$conn) {
+        echo "Error in Connection" . mysqli_connect_error();
+    } else {
+        $user_id = $_SESSION['user_id'];
+        $sql = "DELETE FROM contact_number 
+        WHERE contact_id IN(
+        SELECT contact_id 
+        FROM contact_details 
+        WHERE user_id = {$_SESSION['user_id']}
+    )";
+
+    if (mysqli_query($conn, $sql)) {
+        $sql_2 = "delete cd,up
+        from contact_details cd
+        join user_profile up
+        on cd.user_id =up.user_id
+        where user_id = {$_SESSION['user_id']}";
+    if (mysqli_query($conn, $sql)) {
         session_unset();
         session_destroy();
         header("location:registeration.php");
-    }else{
+    } else {
+        echo "Error" . $sql_2 . "<br>" . mysqli_error($conn);
+    }
+    } else {
         echo "Error" . $sql . "<br>" . mysqli_error($conn);
     }
-
-}
+        }
     }
 }
 ?>
@@ -59,7 +73,7 @@ if(!$conn){
 
         }
 
-        .breakpoints{
+        .breakpoints {
             height: 573px;
             /* border: 2px solid black; */
         }
@@ -83,12 +97,13 @@ if(!$conn){
         .field_width {
             width: 62%;
         }
+
         .custom_nav {
             top: 8px;
             right: 20px;
             text-align: center;
             position: absolute;
-                }
+        }
     </style>
 </head>
 
@@ -99,8 +114,10 @@ if(!$conn){
             <div class="container-fluid text-light">
                 <div class="row">
                     <div class="col-12">
-                    <p class="h4"><i class="fa-solid fa-address-book fa-sm text-secondary"></i> PhoneBook Directory
-                         <a href="logout.php" class="text-decoration-none text-light custom_nav">Logout</a></p>                    </div>
+                        <p class="h4"><i class="fa-solid fa-address-book fa-sm text-secondary"></i> PhoneBook Directory
+                            <a href="logout.php" class="text-decoration-none text-light custom_nav">Logout</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -119,30 +136,30 @@ if(!$conn){
 
                 </div>
                 <div class="breakpoints col-lg-10 col-md-9 col-sm-8 h-auto adjust_form">
-                <div class="modal mt-5 pt-5 ps-5 h-100" tabindex="-1" id="modal_id">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirm Deletion</h5>
+                    <div class="modal mt-5 pt-5 ps-5 h-100" tabindex="-1" id="modal_id">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Confirm Deletion</h5>
+                                </div>
+                                <div class="modal-body mt-3">
+                                    <div class="h5">Are you Sure you want to delete your Account?</div>
+                                </div>
+                                <div class="modal-footer mt-5">
+                                    <form action="<?php echo $_SERVER['PHP_SELF'] ?>" method="post">
+                                        <!-- <button type="button" id="yes" class="btn btn-primary" data-bs-dismiss="modal">Yes</button> -->
+                                        <button type="button" id="no" class="btn btn-danger">No</button>
+                                        <input type="submit" value="Yes" name="del_btn" class="btn btn-primary">
+
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="modal-body mt-3">
-                        <div class="h5">Are you Sure you want to delete your Account?</div>
-                    </div>
-                    <div class="modal-footer mt-5">
-                        <form action="<?php echo $_SERVER['PHP_SELF']?>" method="post">
-                        <!-- <button type="button" id="yes" class="btn btn-primary" data-bs-dismiss="modal">Yes</button> -->
-                        <button type="button" id="no" class="btn btn-danger">No</button>
-                        <input type="submit" value="Yes" name="del_btn" class="btn btn-primary">
-                        
-            </form>
-                    </div>
-                </div>
-            </div>
-</div>
-    
+
 
                 </div>
-                </div>      
+            </div>
         </div>
     </main>
     <footer>
@@ -155,7 +172,7 @@ if(!$conn){
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.min.js" integrity="sha384-7VPbUDkoPSGFnVtYi0QogXtr74QeVeeIs99Qfg5YCF+TidwNdjvaKZX19NZ/e6oz" crossorigin="anonymous">
     </script>
 
-<script>
+    <script>
         let my_modal = new bootstrap.Modal(document.getElementById('modal_id'));
         my_modal.show();
         document.getElementById('no').addEventListener('click', function() {
@@ -172,8 +189,3 @@ if(!$conn){
 </body>
 
 </html>
-
-
-
-
-   

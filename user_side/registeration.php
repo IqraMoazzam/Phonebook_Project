@@ -2,6 +2,78 @@
 <?php
 session_start();
 
+function sendEmail($to,$name,$uname,$v_code){
+    // Set your ElasticEmail API key
+    $apiKey = '3F02346C2621CF5F57519E71141102EE73647057B738186CE76CBDE080325CFBA7BF8CDCC116D54A38E7875D8C6A2364';
+    
+    // API endpoint for sending emails
+    $url = 'https://api.elasticemail.com/v2/email/send';
+    
+    // Email parameters
+    $from = 'iqramoazzam22@gmail.com';
+    
+    $subject = "Activation E-Mail for Account Creation from Phone-Book";
+    $message = "Greetings ".$name." from Phone-Book.com.<br><br>
+    You have registered on our website by the username : ".$uname."<br>. 
+    Please Click the following link in order to complete the registration
+    process for your account creation on Phone-Book.<br>
+    http://localhost/phonebook-project/user_side/email_verification.php?v_code=$v_code<br>
+    If you think you have recieved this E-Mail by mistake and you have never signed up or
+    registered for the account creation on the phone-book website then
+    ignore this E-Mail.";
+    
+    
+    // Prepare the request data
+    $data = array(
+        'apikey' => $apiKey,
+        'from' => $from,
+        'to' => $to,
+        'name' => $name,
+        'verification_code' => $v_code,
+        'uname' => $uname,
+        'subject' => $subject,
+        'body' => $message,
+        'isTransactional' => true, // Set to true for transactional emails
+    );
+    
+    // Initialize cURL session
+    $ch = curl_init($url);
+    
+    // Set cURL options
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    
+    // Execute the cURL request
+    $response = curl_exec($ch);
+    
+    // Check for cURL errors
+    if (curl_errno($ch)) {
+        echo 'cURL Error: ' . curl_error($ch);
+    }
+    
+    // Close cURL session
+    curl_close($ch);
+    
+    // Process the response
+    $responseData = json_decode($response, true);
+    
+    // Check the response status
+    if ($responseData['success']) {
+        echo "<h4>"  . 'Email sent successfully!' . "</h4>";
+    } else {
+        echo 'Failed to send the email. Error: ' . $responseData['error'];
+    }
+    
+    }
+
+function test_input($data)
+{
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
 //define variables and set to empty values
 $name = $uname = $email = $password = $gender = $date_of_birth = $upload_image = "";
 $nameError = $unameError = $emailError = $passwordError = $genderError = $date_of_birth_Error = $upload_image_Error = "";
@@ -103,93 +175,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $file_type = $_FILES['image']['type'];
         $file_size = $_FILES['image']['size'];
         if (move_uploaded_file($file_tmp, "uploaded_file/" . $file_name)) {
-            echo "Successfully File Uploaded";
+            // echo "Successfully File Uploaded";
         } else {
             $upload_image_Error = "Could not file Uploaded";
             $is_form_valid = false;
         }
     }
-
-    //Database Connection
-    if ($is_form_valid) {
-        function sendEmail($to,$name,$uname,$v_code){
-            // Set your ElasticEmail API key
-            $apiKey = '3F02346C2621CF5F57519E71141102EE73647057B738186CE76CBDE080325CFBA7BF8CDCC116D54A38E7875D8C6A2364';
-            
-            // API endpoint for sending emails
-            $url = 'https://api.elasticemail.com/v2/email/send';
-            
-            // Email parameters
-            $from = 'iqramoazzam22@gmail.com';
-            
-            $subject = "Activation E-Mail for Account Creation from Phone-Book";
-            $message = "Greetings ".$name."from Phone-Book.com<br><br>.You have
-            registered on our website by the username : ".$uname.". Please Click
-            the following link in order to complete the registration
-            process for your account creation on Phone-Book.
-            http://localhost/phonebook-project/user_side/email_verification.php?email=$to&v_code=$v_code'>
-            If you think you have recieved this E-Mail by mistake and you have never signed up or
-            registered for the account creation on the phone-book website then
-            ignore this E-Mail";
-            ;
-            
-            // Prepare the request data
-            $data = array(
-                'apikey' => $apiKey,
-                'from' => $from,
-                'to' => $to,
-                'name' => $name,
-                'verification_code' => $v_code,
-                'uname' => $uname,
-                'subject' => $subject,
-                'body' => $message,
-                'isTransactional' => true, // Set to true for transactional emails
-            );
-            
-            // Initialize cURL session
-            $ch = curl_init($url);
-            
-            // Set cURL options
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            
-            // Execute the cURL request
-            $response = curl_exec($ch);
-            
-            // Check for cURL errors
-            if (curl_errno($ch)) {
-                echo 'cURL Error: ' . curl_error($ch);
-            }
-            
-            // Close cURL session
-            curl_close($ch);
-            
-            // Process the response
-            $responseData = json_decode($response, true);
-            
-            // Check the response status
-            if ($responseData['success']) {
-                echo 'Email sent successfully!';
-            } else {
-                echo 'Failed to send the email. Error: ' . $responseData['error'];
-            }
-            
-            }
+       
+       
         
+    //Database Connection
+        if ($is_form_valid) {
+             
         if (isset($_SESSION['user_id'])) {
             header("location:home.php");
         }
-        function test_input($data)
-        {
-            $data = trim($data);
-            $data = stripslashes($data);
-            $data = htmlspecialchars($data);
-            return $data;
-        }
-        
-
-
         $conn = mysqli_connect("localhost", "root", "", "phonebook-project");
         if (!$conn) {
             echo "Error Connection" . mysqli_connect_error();
@@ -199,7 +199,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $sql = "insert into user_profile(user_name,user_username,user_email,user_password,user_gender,user_dob,user_image,verification_code,is_verified,user_active)
     values('$name','$uname','$email','$password','$gender','$date_of_birth','$upload_image','$v_code',0,1)";
             if (mysqli_query($conn, $sql)) {
-                if(sendEmail($_POST['email'],$v_code)){
+                if(sendEmail($_POST['email'],$name,$uname,$v_code)){
                 // header("Location: login.php");
                 // exit();
                 }
